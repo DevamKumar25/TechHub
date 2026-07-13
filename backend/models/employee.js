@@ -112,6 +112,13 @@ const employeeSchema = new Schema(
         },
       },
     ],
+
+    projects: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Project",
+      },
+    ],
   },
   {
     timestamps: true,

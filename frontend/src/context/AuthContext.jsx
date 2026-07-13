@@ -1,5 +1,6 @@
 import { createContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { logoutUser } from "../services/authService";
 
 export const AuthContext = createContext();
 
@@ -10,14 +11,20 @@ export default function AuthProvider({ children }) {
   );
   const navigate = useNavigate();
 
-  const login = (token, userData) => {
-    localStorage.setItem("token", token);
+  const login = (jwtToken, userData) => {
+    localStorage.setItem("token", jwtToken);
     localStorage.setItem("user", JSON.stringify(userData));
-    setToken(token);
+    setToken(jwtToken);
     setUser(userData);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error(err);
+    }
+
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken(null);

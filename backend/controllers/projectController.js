@@ -4,6 +4,27 @@ import Client from "../models/client.js";
 import Employee from "../models/employee.js";
 import { generateProjectId } from "../utils/generateId.js";
 
+const syncEmployeeProjectReferences = async (project, previousEmployeeIds = []) => {
+  const currentEmployeeIds = (project.team || [])
+    .map((member) => member.employee?.toString())
+    .filter(Boolean);
+
+  const previousSet = new Set(previousEmployeeIds.map((id) => id.toString()));
+  const currentSet = new Set(currentEmployeeIds);
+
+  const toAdd = currentEmployeeIds.filter((id) => !previousSet.has(id));
+  const toRemove = previousEmployeeIds.filter((id) => !currentSet.has(id.toString()));
+
+  await Promise.all([
+    toAdd.length
+      ? Employee.updateMany({ _id: { $in: toAdd } }, { $addToSet: { projects: project._id } })
+      : Promise.resolve(),
+    toRemove.length
+      ? Employee.updateMany({ _id: { $in: toRemove } }, { $pull: { projects: project._id } })
+      : Promise.resolve(),
+  ]);
+};
+
 // @desc    List projects - search by name/client/type/employee, status + type filters, sort
 // @route   GET /api/projects?search=&status=&type=&sort=&page=&limit=
 export const getProjects = asyncHandler(async (req, res) => {
@@ -128,6 +149,8 @@ export const createProject = asyncHandler(async (req, res) => {
     clientName: clientDoc.clientName,
   });
 
+  await syncEmployeeProjectReferences(project);
+
   // Keep the client's "Total Services" count in sync with its project count
   clientDoc.totalServices += 1;
   await clientDoc.save();
@@ -138,6 +161,12 @@ export const createProject = asyncHandler(async (req, res) => {
 // @desc    Update project
 // @route   PUT /api/projects/:id
 export const updateProject = asyncHandler(async (req, res) => {
+  const existingProject = await Project.findById(req.params.id);
+  if (!existingProject) {
+    res.status(404);
+    throw new Error("Project not found");
+  }
+
   const payload = { ...req.body };
 
   // If the client is being changed, refresh the denormalized clientName too
@@ -160,6 +189,10 @@ export const updateProject = asyncHandler(async (req, res) => {
     throw new Error("Project not found");
   }
 
+  if (Object.prototype.hasOwnProperty.call(req.body, "team")) {
+    await syncEmployeeProjectReferences(project, existingProject.team.map((member) => member.employee));
+  }
+
   res.json({ success: true, data: project });
 });
 
@@ -175,6 +208,7 @@ export const deleteProject = asyncHandler(async (req, res) => {
 
   // Keep the client's "Total Services" count accurate
   await Client.findByIdAndUpdate(project.client, { $inc: { totalServices: -1 } });
+  await Employee.updateMany({ projects: project._id }, { $pull: { projects: project._id } });
 
   res.json({ success: true, data: {} });
 });
@@ -196,8 +230,10 @@ export const addTeamMember = asyncHandler(async (req, res) => {
     throw new Error("Employee is already assigned to this project");
   }
 
+  const previousEmployeeIds = project.team.map((member) => member.employee);
   project.team.push({ employee, roleInProject });
   await project.save();
+  await syncEmployeeProjectReferences(project, previousEmployeeIds);
 
   const populated = await project.populate("team.employee", "name profilePhoto designation");
   res.status(201).json({ success: true, data: populated });

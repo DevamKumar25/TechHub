@@ -52,7 +52,11 @@ export const getEmployees = asyncHandler(async (req, res) => {
   const skip = (Number(page) - 1) * Number(limit);
 
   const [employees, total] = await Promise.all([
-    Employee.find(query).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    Employee.find(query)
+      .populate("projects", "projectId projectName status clientName")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
     Employee.countDocuments(query),
   ]);
 
@@ -143,7 +147,7 @@ export const exportEmployees = asyncHandler(async (req, res) => {
 // @desc    Get single employee
 // @route   GET /api/employees/:id
 export const getEmployeeById = asyncHandler(async (req, res) => {
-  const employee = await Employee.findById(req.params.id);
+  const employee = await Employee.findById(req.params.id).populate("projects", "projectId projectName status clientName");
 
   if (!employee) {
     res.status(404);

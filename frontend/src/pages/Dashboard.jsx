@@ -40,6 +40,20 @@ export default function Dashboard() {
     fetchStats();
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-sky-200 border-t-sky-600" />
+          <div>
+            <p className="text-lg font-semibold text-slate-800">Loading dashboard</p>
+            <p className="text-sm text-slate-500">Fetching your latest stats from the server...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome banner */}

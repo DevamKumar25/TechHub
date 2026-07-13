@@ -209,6 +209,7 @@ export default function Projects() {
                 <th scope="col" className="px-6 py-4">Project Name</th>
                 <th scope="col" className="px-6 py-4">Project ID</th>
                 <th scope="col" className="px-6 py-4">Client</th>
+                <th scope="col" className="px-6 py-4">Employees</th>
                 <th scope="col" className="px-6 py-4">Type</th>
                 <th scope="col" className="px-6 py-4">Total Cost</th>
                 <th scope="col" className="px-6 py-4">Pending Amount</th>
@@ -247,6 +248,24 @@ export default function Projects() {
                     {/* Client Name */}
                     <td className="px-6 py-4 font-semibold text-slate-600">
                       {proj.clientName}
+                    </td>
+
+                    {/* Assigned Employees */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {proj.team?.length ? (
+                          proj.team.map((member) => (
+                            <span
+                              key={member._id || member.employee?._id}
+                              className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600"
+                            >
+                              {member.employee?.name || "Unknown"}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-sm text-slate-400">Not assigned</span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Project Type */}

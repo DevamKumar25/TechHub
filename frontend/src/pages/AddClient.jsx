@@ -178,11 +178,11 @@ export default function AddClient() {
           {/* Address */}
           <div className="md:col-span-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-              Billing / Physical Address
+              Full Address Detils
             </label>
             <textarea
               rows={2}
-              placeholder="Physical street address..."
+              placeholder="City state Country..."
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="mt-2 w-full rounded-xl border border-slate-200 py-2.5 px-4 text-sm outline-none focus:border-blue-400"

@@ -1,15 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getClients } from "../services/clientService";
+import { getEmployees } from "../services/employeeService";
 import { createProject } from "../services/projectService";
 import { toast } from "react-hot-toast";
 
 export default function AddProject() {
   const navigate = useNavigate();
 
-  // List of clients to choose from
+  // List of clients and employees to choose from
   const [clientList, setClientList] = useState([]);
+  const [employeeList, setEmployeeList] = useState([]);
   const [fetchingClients, setFetchingClients] = useState(false);
+  const [fetchingEmployees, setFetchingEmployees] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState("");
 
   // Form state
   const [form, setForm] = useState({
@@ -21,25 +25,32 @@ export default function AddProject() {
     pendingAmount: 0,
     startDate: new Date().toISOString().split("T")[0],
     endDate: "",
+    team: [],
   });
 
   const [saving, setSaving] = useState(false);
 
-  // Fetch clients to populate the dropdown selection
+  // Fetch clients and employees to populate the dropdown selection
   useEffect(() => {
-    async function loadClients() {
+    async function loadOptions() {
       setFetchingClients(true);
+      setFetchingEmployees(true);
       try {
-        const res = await getClients({ limit: 100 });
-        setClientList(res.data.data || []);
+        const [clientsRes, employeesRes] = await Promise.all([
+          getClients({ limit: 100 }),
+          getEmployees({ limit: 100 }),
+        ]);
+        setClientList(clientsRes.data.data || []);
+        setEmployeeList(employeesRes.data.data || []);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load clients list for project form.");
+        toast.error("Failed to load project form options.");
       } finally {
         setFetchingClients(false);
+        setFetchingEmployees(false);
       }
     }
-    loadClients();
+    loadOptions();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -49,9 +60,18 @@ export default function AddProject() {
       return;
     }
 
+    if (!selectedEmployee) {
+      toast.error("Please select an employee for this project.");
+      return;
+    }
+
     setSaving(true);
     try {
-      await createProject(form);
+      const payload = {
+        ...form,
+        team: [{ employee: selectedEmployee }],
+      };
+      await createProject(payload);
       toast.success("Project added successfully!");
       navigate("/projects");
     } catch (err) {
@@ -103,6 +123,48 @@ export default function AddProject() {
                       {clt.clientName} ({clt.clientId} - {clt.companyName})
                     </option>
                   ))
+                )}
+              </select>
+              <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="h-4 w-4"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </span>
+            </div>
+          </div>
+
+          {/* Assign Employee */}
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+              Select Employee
+            </label>
+            <div className="relative mt-2">
+              <select
+                required
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-4 pr-10 text-sm font-medium text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+              >
+                <option value="">-- Choose Employee --</option>
+                {fetchingEmployees ? (
+                  <option disabled>Loading employees...</option>
+                ) : employeeList.length ? (
+                  employeeList.map((employee) => (
+                    <option key={employee._id} value={employee._id}>
+                      {employee.name} ({employee.employeeId}) - {employee.designation}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No employees found</option>
                 )}
               </select>
               <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">

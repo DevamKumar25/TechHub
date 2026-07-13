@@ -12,12 +12,25 @@ export default function Register() {
     email: "",
     password: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    await registerUser(form);
-    navigate("/");
+    try {
+      const res = await registerUser(form);
+      if (res.data?.token && res.data?.user) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+      }
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Registration failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -88,7 +101,9 @@ export default function Register() {
               />
             </div>
 
-            <Button className="mt-6">Create account</Button>
+            <Button className="mt-6" isLoading={isSubmitting} disabled={isSubmitting}>
+              Create account
+            </Button>
 
             <p className="mt-6 text-center text-sm text-slate-600">
               Already have an account?{" "}

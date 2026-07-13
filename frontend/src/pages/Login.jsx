@@ -10,16 +10,25 @@ export default function Login() {
     email: "",
     password: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const res = await loginUser(form);
-    login(res.data.token, res.data.user);
-    navigate("/dashboard");
+    try {
+      const res = await loginUser(form);
+      login(res.data.token, res.data.user);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Login failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -84,7 +93,9 @@ export default function Login() {
               />
             </div>
 
-            <Button className="mt-6">Sign in</Button>
+            <Button className="mt-6" isLoading={isSubmitting} disabled={isSubmitting}>
+              Sign in
+            </Button>
 
             <p className="mt-6 text-center text-sm text-slate-600">
               Don’t have an account?{" "}
