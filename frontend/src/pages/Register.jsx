@@ -19,12 +19,8 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const res = await registerUser(form);
-      if (res.data?.token && res.data?.user) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-      }
-      navigate("/dashboard");
+      await registerUser(form);
+      navigate("/", { replace: true });
     } catch (err) {
       console.error(err);
       alert(err.response?.data?.message || "Registration failed.");
